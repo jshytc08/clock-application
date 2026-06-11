@@ -1,0 +1,24 @@
+body {
+    background-color: #000000; /* True black background */
+    color: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding: 20px;
+}
+
+.clock-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.clock-card {
+    background: #1c1c1e; /* iOS card dark gray */
+    padding: 20px;
+    border-radius: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.time-info h3 { margin: 0; font-size: 1.2rem; color: #a1a1a6; }
+.time-display { font-size: 2.5rem; font-weight: 300; }

@@ -1,24 +1,93 @@
-body {
-    background-color: #000000; /* True black background */
-    color: #ffffff;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    padding: 20px;
+:root {
+    --bg-color: #050505;
+    --card-bg: rgba(28, 28, 30, 0.8);
+    --text-primary: #ffffff;
+    --text-secondary: #8e8e93;
+    --accent: #0a84ff;
 }
 
+body {
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    padding: 2rem;
+}
+
+/* Glassmorphism Dashboard Header */
+.dashboard-header {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #333;
+    padding-bottom: 1rem;
+}
+
+/* Optimized Responsive Grid */
 .clock-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 16px;
+    /* This creates a perfectly balanced responsive layout */
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
 }
 
+/* Professional Card Styling */
 .clock-card {
-    background: #1c1c1e; /* iOS card dark gray */
-    padding: 20px;
+    background: var(--card-bg);
+    backdrop-filter: blur(10px);
+    padding: 1.5rem;
     border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.1);
+    
+    /* Change to column layout */
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem; /* Space between label and time */
+    
+    transition: transform 0.2s ease;
 }
 
-.time-info h3 { margin: 0; font-size: 1.2rem; color: #a1a1a6; }
-.time-display { font-size: 2.5rem; font-weight: 300; }
+.clock-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-4px);
+}
+
+.time-display {
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 1.5rem; /* Slightly smaller for perfect fit */
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.label-container h3 {
+    margin: 0;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05rem;
+}
+
+.sticky-header {
+    position: sticky;
+    top: 0;
+    background: #000;
+    padding-bottom: 20px;
+    z-index: 10;
+}
+
+.controls {
+    display: flex;
+    gap: 10px;
+}
+
+#searchInput, #regionSelect {
+    padding: 12px;
+    background: #1c1c1e;
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: white;
+}
+
+#searchInput { flex: 2; }
+#regionSelect { flex: 1; }
+
+.hidden { display: none !important; }

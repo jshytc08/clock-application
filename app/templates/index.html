@@ -1,12 +1,35 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Time Dashboard</title>
     <link rel="stylesheet" href="/static/css/style.css" />
   </head>
   <body>
     <div class="dashboard">
-      <h1>Global Time Dashboard</h1>
-      <div id="clock-grid" class="clock-grid"></div>
+      <header class="sticky-header">
+        <h1>Global Time Dashboard</h1>
+        <div class="controls">
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Search city..."
+            onkeyup="filterClocks()"
+          />
+          <select id="regionSelect" onchange="filterClocks()">
+            <option value="">All Regions</option>
+            <option value="Africa">Africa</option>
+            <option value="America">America</option>
+            <option value="Asia">Asia</option>
+            <option value="Europe">Europe</option>
+            <option value="Australia">Australia</option>
+            <option value="Pacific">Pacific</option>
+          </select>
+        </div>
+      </header>
+
+      <main id="clock-grid" class="clock-grid"></main>
     </div>
 
     <script src="/static/js/main.js"></script>

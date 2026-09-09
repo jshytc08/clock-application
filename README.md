@@ -19,10 +19,10 @@ Use Python 3.14 (the tested runtime):
 ```powershell
 python -m venv .venv
 .venv\Scripts\python -m pip install -r requirements.txt
-.venv\Scripts\python -m uvicorn app.main:app --reload --port 8200
+.venv\Scripts\python -m uvicorn app.main:app --reload --port 8300
 ```
 
-Open <http://127.0.0.1:8200>. See [SETUP.md](SETUP.md) for macOS/Linux, verification, and managed hosting.
+Open <http://127.0.0.1:8300>. See [SETUP.md](SETUP.md) for macOS/Linux, verification, and managed hosting.
 
 ## Verify before committing
 

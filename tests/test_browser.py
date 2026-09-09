@@ -13,26 +13,45 @@ from urllib.request import urlopen
 import pytest
 from playwright.sync_api import expect, sync_playwright
 
+from scripts.build_pages import build_pages
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
-@pytest.fixture(scope="module")
-def base_url():
+@pytest.fixture(scope="module", params=["server", "static"])
+def base_url(request, tmp_path_factory):
     with socket.socket() as sock:
         sock.bind(("127.0.0.1", 0))
         port = sock.getsockname()[1]
+    if request.param == "static":
+        site_root = tmp_path_factory.mktemp("pages")
+        build_pages(site_root / "clock-application")
+        command = [
+            sys.executable,
+            "-m",
+            "http.server",
+            str(port),
+            "--bind",
+            "127.0.0.1",
+            "--directory",
+            str(site_root),
+        ]
+        suffix = "/clock-application/"
+    else:
+        command = [sys.executable, "-m", "app.main"]
+        suffix = ""
     process = subprocess.Popen(
-        [sys.executable, "-m", "app.main"],
+        command,
         env={**os.environ, "PORT": str(port), "ALLOWED_HOSTS": "127.0.0.1"},
         cwd=ROOT,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
-    url = f"http://127.0.0.1:{port}"
+    url = f"http://127.0.0.1:{port}{suffix}"
     try:
         for _ in range(100):
             try:
-                with urlopen(f"{url}/health", timeout=1) as response:
+                with urlopen(url if suffix else f"{url}/health", timeout=1) as response:
                     if response.status == 200:
                         break
             except URLError:
@@ -103,6 +122,9 @@ def test_catalog_search_pagination_and_no_per_clock_polling(page, base_url):
     page.clock.install()
     page.clock.fast_forward(5000)
     assert not any("/api/world-clock/" in url for url in requests)
+    if "/clock-application/" in base_url:
+        assert not any("/api/" in url for url in requests)
+        expect(page.locator("#sync-status")).to_have_text("● Device time")
 
 
 def test_favorite_limit_persistence_and_hour_format(page, base_url):
@@ -177,12 +199,17 @@ def test_alarms_validation_duplicate_limit_safe_labels_and_due_delivery(page, ba
 
 def test_network_failure_retry_and_corrupt_storage(page, base_url):
     page.add_init_script("localStorage.setItem('meridian.v1', '{broken');")
-    page.route("**/api/timezones?*", lambda route: route.abort())
+    catalog_route = (
+        "**/static/data/timezones.json"
+        if "/clock-application/" in base_url
+        else "**/api/timezones?*"
+    )
+    page.route(catalog_route, lambda route: route.abort())
     page.goto(base_url)
     expect(page.locator("#storage-notice")).to_be_visible()
     expect(page.locator("#catalog-error")).to_be_visible()
     expect(page.locator("#next-page")).to_be_disabled()
-    page.unroute("**/api/timezones?*")
+    page.unroute(catalog_route)
     page.locator("#retry").click()
     expect(page.locator("#clock-grid .clock-card")).to_have_count(12)
 
@@ -203,7 +230,8 @@ def test_responsive_layout_labels_keyboard_and_screenshots(page, base_url):
     open_app(page, base_url)
     artifacts = ROOT / "artifacts"
     artifacts.mkdir(exist_ok=True)
-    page.screenshot(path=str(artifacts / "desktop.png"), full_page=True)
+    suffix = "-pages" if "/clock-application/" in base_url else ""
+    page.screenshot(path=str(artifacts / f"desktop{suffix}.png"), full_page=True)
     assert page.locator("input, select").evaluate_all(
         "(elements) => elements.every(el => el.labels.length > 0)"
     )
@@ -215,13 +243,15 @@ def test_responsive_layout_labels_keyboard_and_screenshots(page, base_url):
     for width in (390, 320):
         page.set_viewport_size({"width": width, "height": 844})
         assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
-        page.screenshot(path=str(artifacts / f"mobile-{width}.png"), full_page=True)
+        page.screenshot(path=str(artifacts / f"mobile-{width}{suffix}.png"), full_page=True)
 
 
 def test_configured_host_restrictions_reject_untrusted_requests(base_url):
     from urllib.error import HTTPError
     from urllib.request import Request
 
+    if "/clock-application/" in base_url:
+        pytest.skip("Host restrictions belong to FastAPI; Pages supplies its own hosting layer.")
     request = Request(f"{base_url}/health", headers={"Host": "untrusted.example"})
     with pytest.raises(HTTPError) as error:
         urlopen(request, timeout=2)

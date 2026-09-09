@@ -10,7 +10,7 @@ A responsive, privacy-friendly clock dashboard built with FastAPI and plain Java
 - Up to 10 labeled, one-time alarms in the device's local timezone. Duplicate scheduled times and labels over 40 characters are rejected.
 - Browser-local persistence, storage recovery, loading/error/empty states, keyboard focus indicators, and layouts down to 320px.
 
-The directory uses the maintained `pytz.common_timezones` catalog. Exact timezone identifiers are preserved, including hyphens and nested city names. Clocks render with `Intl.DateTimeFormat` and synchronize to the server on load, every five minutes, and when returning to the tab; there is no per-clock polling. A failed sync falls back to visibly labeled device time.
+The directory uses the maintained `pytz.common_timezones` catalog. Exact timezone identifiers are preserved, including hyphens and nested city names. Clocks render with `Intl.DateTimeFormat` and synchronize to the server on load, every five minutes, and when returning to the tab; there is no per-clock polling. A failed sync falls back to visibly labeled device time. The GitHub Pages release intentionally uses device time and its bundled timezone directory, so it makes no API calls.
 
 ## Run locally
 
@@ -23,6 +23,12 @@ python -m venv .venv
 ```
 
 Open <http://127.0.0.1:8300>. See [SETUP.md](SETUP.md) for macOS/Linux, verification, and managed hosting.
+
+## GitHub Pages
+
+The static release is published at <https://jshytc08.github.io/clock-application/> after a passing push to `main`. In the repository's **Settings → Pages**, select **GitHub Actions** as the build and deployment source. The workflow builds a fresh ignored `dist/` artifact; do not commit that directory. Use **Run workflow** in the Actions tab to redeploy the current `main` commit.
+
+Pages runs entirely in the browser: it uses device time and a bundled timezone catalog. It has no `/health` endpoint, API endpoints, server-side host validation, or FastAPI response headers. GitHub Pages controls HTTPS and HTTP-header policy for the published site.
 
 ## Verify before committing
 
@@ -60,4 +66,4 @@ Catalog parameters: `q` (maximum 80 characters), `region` (one of the returned r
 
 ## Release status
 
-This repository includes a tested first-release implementation and managed-host instructions. It has not been deployed or load-tested against a live host. HTTPS, health monitoring, edge rate limits, host configuration, and a staging smoke test are deployment responsibilities described in [SETUP.md](SETUP.md).
+This repository includes a tested first-release implementation, a GitHub Pages release workflow, and managed-host instructions. The Pages workflow publishes after its release checks pass. The FastAPI service has not been deployed or load-tested against a live host. HTTPS, health monitoring, edge rate limits, host configuration, and a staging smoke test are deployment responsibilities described in [SETUP.md](SETUP.md).

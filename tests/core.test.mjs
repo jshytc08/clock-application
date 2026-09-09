@@ -82,3 +82,41 @@ test('paused and overdue timers survive restoration so overdue alerts can be del
     assert.deepEqual(restoreState(JSON.stringify(saved)).timer, saved.timer);
   }
 });
+
+test('static directory preserves search, regions, and bounded pagination', async () => {
+  const { paginateCatalog } = await import('../app/static/js/catalog.mjs');
+  const zones = [
+    'America/Argentina/Buenos_Aires',
+    'America/New_York',
+    'America/Port-au-Prince',
+    'Asia/Manila',
+    'UTC',
+  ];
+  const query = (values) => paginateCatalog(zones, new URLSearchParams(values));
+  assert.deepEqual(query({ q: '  NEW_york  ' }).zones, ['America/New_York']);
+  assert.deepEqual(query({ q: 'buenos aires' }).zones, ['America/Argentina/Buenos_Aires']);
+  assert.deepEqual(query({ region: 'Other' }).zones, ['UTC']);
+  assert.equal(query({ q: 'not a city' }).total, 0);
+  for (const values of [
+    { page: 0 },
+    { page: 2 },
+    { page_size: 13 },
+    { region: 'Missing' },
+    { q: 'a'.repeat(81) },
+  ]) {
+    assert.throws(() => query(values));
+  }
+  const manyZones = Array.from(
+    { length: 30 },
+    (_, index) => `Asia/City_${String(index).padStart(2, '0')}`,
+  );
+  const first = paginateCatalog(manyZones, new URLSearchParams({ page: 1 }));
+  const second = paginateCatalog(manyZones, new URLSearchParams({ page: 2 }));
+  assert.equal(first.zones.length, 12);
+  assert.equal(second.zones.length, 12);
+  assert.equal(first.pages, 3);
+  assert.equal(
+    first.zones.some((zone) => second.zones.includes(zone)),
+    false,
+  );
+});

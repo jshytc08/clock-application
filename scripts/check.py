@@ -17,6 +17,7 @@ commands = [
     [sys.executable, "-m", "ruff", "format", "--check", "app", "tests", "scripts"],
     [node, "--check", "app/static/js/main.js"],
     [node, "--check", "app/static/js/core.mjs"],
+    [node, "--check", "app/static/js/catalog.mjs"],
     [npm, "run", "format:check"],
     [npm, "test"],
     [sys.executable, "-m", "pytest", "-q"],

@@ -10,8 +10,10 @@
   defaultState,
   restoreState,
 } from './core.mjs';
+import { fetchCatalogPage } from './catalog.mjs';
 
 const $ = (id) => document.getElementById(id);
+const staticMode = document.documentElement.dataset.hosting === 'static';
 let state;
 try {
   state = restoreState(localStorage.getItem(STORAGE_KEY));
@@ -80,6 +82,13 @@ function formatter(zone) {
   return formatters.get(key);
 }
 async function syncTime() {
+  if (staticMode) {
+    synced = false;
+    $('sync-status').textContent = '● Device time';
+    lastPaint = '';
+    tick();
+    return;
+  }
   if (syncPending) return;
   syncPending = true;
   const start = performance.now();
@@ -199,11 +208,11 @@ async function loadCatalog() {
     page_size: String(state.pageSize),
   });
   try {
-    const response = await fetch(`/api/timezones?${params}`, {
-      signal: AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]),
-    });
-    if (!response.ok) throw new Error('Catalog unavailable');
-    const data = await response.json();
+    const data = await fetchCatalogPage(
+      params,
+      AbortSignal.any([controller.signal, AbortSignal.timeout(10000)]),
+      staticMode,
+    );
     if (controller.signal.aborted) return;
     catalog = data.zones;
     pages = data.pages;

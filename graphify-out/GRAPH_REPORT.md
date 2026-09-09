@@ -1,16 +1,16 @@
 # Graph Report - clock-application  (2026-09-09)
 
 ## Corpus Check
-- 15 files · ~6,499 words
+- 18 files · ~7,559 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 119 nodes · 177 edges · 12 communities (10 shown, 2 thin omitted)
-- Extraction: 95% EXTRACTED · 5% INFERRED · 0% AMBIGUOUS · INFERRED: 8 edges (avg confidence: 0.5)
+- 134 nodes · 203 edges · 12 communities (10 shown, 2 thin omitted)
+- Extraction: 96% EXTRACTED · 4% INFERRED · 0% AMBIGUOUS · INFERRED: 8 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `ab3fa62a`
+- Built from commit: `0f528276`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -33,21 +33,21 @@
 4. `toggleFavorite()` - 7 edges
 5. `formatDuration()` - 6 edges
 6. `createCard()` - 6 edges
-7. `zoneName()` - 5 edges
-8. `restoreState()` - 5 edges
-9. `save()` - 5 edges
-10. `make()` - 5 edges
+7. `loadCatalog()` - 6 edges
+8. `build_pages()` - 6 edges
+9. `zoneName()` - 5 edges
+10. `restoreState()` - 5 edges
 
 ## Surprising Connections (you probably didn't know these)
+- `test_static_export_contains_only_public_web_assets()` --calls--> `build_pages()`  [EXTRACTED]
+  tests/test_pages.py → scripts/build_pages.py
+- `base_url()` --calls--> `build_pages()`  [EXTRACTED]
+  tests/test_browser.py → scripts/build_pages.py
+- `loadCatalog()` --calls--> `fetchCatalogPage()`  [EXTRACTED]
+  app/static/js/main.js → app/static/js/catalog.mjs
 - `toggleFavorite()` --calls--> `validZone()`  [EXTRACTED]
   app/static/js/main.js → app/static/js/core.mjs
-- `tick()` --calls--> `formatDuration()`  [EXTRACTED]
-  app/static/js/main.js → app/static/js/core.mjs
-- `alarmPreview()` --calls--> `nextAlarm()`  [EXTRACTED]
-  app/static/js/main.js → app/static/js/core.mjs
-- `createCard()` --calls--> `zoneName()`  [EXTRACTED]
-  app/static/js/main.js → app/static/js/core.mjs
-- `toggleFavorite()` --calls--> `zoneName()`  [EXTRACTED]
+- `previewTimer()` --calls--> `durationSeconds()`  [EXTRACTED]
   app/static/js/main.js → app/static/js/core.mjs
 
 ## Import Cycles
@@ -60,12 +60,12 @@ Cohesion: 0.14
 Nodes (13): devDependencies, prettier, engines, node, name, private, scripts, format (+5 more)
 
 ### Community 1 - "main.js"
-Cohesion: 0.17
-Nodes (23): zoneName(), alarmDate(), alarmPreview(), alertUser(), catalog, chime(), clockNow(), createCard() (+15 more)
+Cohesion: 0.14
+Nodes (28): formatDuration(), MAX_ALARMS, zoneName(), alarmDate(), alarmPreview(), alertUser(), catalog, chime() (+20 more)
 
 ### Community 2 - "core.mjs"
-Cohesion: 0.35
-Nodes (9): defaultState(), durationSeconds(), formatDuration(), nextAlarm(), restoreState(), validZone(), previewTimer(), renderTimer() (+1 more)
+Cohesion: 0.24
+Nodes (10): fetchCatalogPage(), paginateCatalog(), defaultState(), durationSeconds(), MAX_DURATION, MAX_FAVORITES, nextAlarm(), restoreState() (+2 more)
 
 ### Community 3 - ".prettierrc.json"
 Cohesion: 0.50
@@ -76,19 +76,19 @@ Cohesion: 0.13
 Nodes (6): health(), get, read_root(), security_headers(), middleware, Request
 
 ### Community 13 - "test_browser.py"
-Cohesion: 0.20
-Nodes (13): fixture, base_url(), browser(), open_app(), page(), Real browser regression checks; each test gets isolated browser storage., test_alarms_validation_duplicate_limit_safe_labels_and_due_delivery(), test_blocked_storage_and_failed_sync_remain_usable() (+5 more)
+Cohesion: 0.15
+Nodes (17): fixture, Path, build_pages(), Export only public web assets for static hosting, including project subpaths., base_url(), browser(), open_app(), page() (+9 more)
 
 ### Community 18 - "get_all_timezones"
 Cohesion: 0.22
 Nodes (12): get_all_timezones(), get_server_time(), get_time(), get, Read-only time API with bounded, deterministic catalog queries., TimezonePage, BaseModel, ge (+4 more)
 
 ### Community 46 - "README.md"
-Cohesion: 0.17
-Nodes (10): Alert behavior and privacy, Read-only API, Release status, Run locally, Verify before committing, What it does, Before opening the production URL to users, Development (+2 more)
+Cohesion: 0.14
+Nodes (12): Alert behavior and privacy, GitHub Pages, Read-only API, Release status, Run locally, Verify before committing, What it does, Before opening the production URL to users (+4 more)
 
 ## Knowledge Gaps
-- **28 isolated node(s):** `singleQuote`, `printWidth`, `endOfLine`, `catalog`, `epochAnchor` (+23 more)
+- **31 isolated node(s):** `singleQuote`, `printWidth`, `endOfLine`, `MAX_DURATION`, `catalog` (+26 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **2 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -96,8 +96,14 @@ Nodes (10): Alert behavior and privacy, Read-only API, Release status, Run local
 _Questions this graph is uniquely positioned to answer:_
 
 - **What connects `singleQuote`, `printWidth`, `endOfLine` to the rest of the system?**
-  _28 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _31 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `package.json` be split into smaller, more focused modules?**
   _Cohesion score 0.14285714285714285 - nodes in this community are weakly interconnected._
+- **Should `main.js` be split into smaller, more focused modules?**
+  _Cohesion score 0.14482758620689656 - nodes in this community are weakly interconnected._
 - **Should `test_api.py` be split into smaller, more focused modules?**
   _Cohesion score 0.1323529411764706 - nodes in this community are weakly interconnected._
+- **Should `test_browser.py` be split into smaller, more focused modules?**
+  _Cohesion score 0.1471861471861472 - nodes in this community are weakly interconnected._
+- **Should `README.md` be split into smaller, more focused modules?**
+  _Cohesion score 0.14285714285714285 - nodes in this community are weakly interconnected._

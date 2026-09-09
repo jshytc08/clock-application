@@ -33,6 +33,21 @@ python scripts/check.py
 
 On Windows without activation, use `.venv\Scripts\python scripts/check.py`. To format changes, run `npm run format` and `python -m ruff format app tests scripts`. Keep intentional dependency pins in `requirements.txt`; do not replace them with an unrelated development environment's `pip freeze` output.
 
+## GitHub Pages static site
+
+The repository includes a Pages deployment job in `.github/workflows/checks.yml`. On a passing push to `main`, it exports the public app to `dist/` and publishes it to <https://jshytc08.github.io/clock-application/>. Enable it once in the repository's **Settings → Pages** by selecting **GitHub Actions** as the deployment source. The same workflow can be run manually to redeploy `main`.
+
+The static release contains no Python service or API. Search, filters, and pagination use the bundled timezone catalog, and clocks use visibly labeled device time. `/health`, `/api/*`, server-side allowed-host rules, and FastAPI security headers apply only to the managed Python service. GitHub Pages provides HTTPS and controls the published site's HTTP headers.
+
+To inspect the export locally after installing `requirements.txt`, run:
+
+```bash
+python scripts/build_pages.py
+python -m http.server 8300 --directory dist
+```
+
+Open `http://127.0.0.1:8300/`. `dist/` is generated and ignored; remove or move an existing `dist/` folder before rebuilding.
+
 ## Managed Python web service
 
 Connect this repository to your managed host as a Python web service, using:

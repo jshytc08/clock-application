@@ -1,37 +1,232 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Global Time Dashboard</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#101816" />
+    <meta
+      name="description"
+      content="A calmer way to keep time. World clocks, a focus timer, and local alarms in one private dashboard."
+    />
+    <title>Meridian — Time, thoughtfully.</title>
+    <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/static/css/style.css" />
+    <script type="module" src="/static/js/main.js"></script>
   </head>
   <body>
-    <div class="dashboard">
-      <header class="sticky-header">
-        <h1>Global Time Dashboard</h1>
-        <div class="controls">
-          <input
-            type="text"
-            id="searchInput"
-            placeholder="Search city..."
-            onkeyup="filterClocks()"
-          />
-          <select id="regionSelect" onchange="filterClocks()">
-            <option value="">All Regions</option>
-            <option value="Africa">Africa</option>
-            <option value="America">America</option>
-            <option value="Asia">Asia</option>
-            <option value="Europe">Europe</option>
-            <option value="Australia">Australia</option>
-            <option value="Pacific">Pacific</option>
-          </select>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="topbar">
+      <a class="brand" href="#main" aria-label="Meridian home"
+        ><span class="brand-mark" aria-hidden="true">◷</span> meridian<span class="brand-dot"
+          >.</span
+        ></a
+      >
+      <nav aria-label="Main navigation">
+        <a href="#world">World clocks</a><a href="#tools">Timer &amp; alarms</a>
+      </nav>
+      <span class="private-badge">◈ &nbsp; Your time. Your space.</span>
+    </header>
+    <main id="main" class="shell">
+      <div id="storage-notice" class="notice" role="status" hidden></div>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <p class="eyebrow"><span class="live-dot"></span> A LITTLE MORE PRESENT</p>
+          <h1 id="hero-title">Make time<br />for what matters.</h1>
+          <p>
+            Your day, in perspective. Stay in sync with the world<br class="desktop-break" />
+            and find a little room to focus.
+          </p>
         </div>
-      </header>
-
-      <main id="clock-grid" class="clock-grid"></main>
-    </div>
-
-    <script src="/static/js/main.js"></script>
+        <div class="local-clock">
+          <div class="local-heading">
+            <span class="eyebrow">YOUR LOCAL TIME</span
+            ><button id="hour-format" class="pill" type="button" aria-pressed="false">
+              24-hour
+            </button>
+          </div>
+          <div id="local-time" class="hero-time">--:--:--</div>
+          <p id="local-date" class="local-date">Finding your moment…</p>
+          <div class="local-meta">
+            <span id="local-zone">Device timezone</span><span id="sync-status">Connecting…</span>
+          </div>
+        </div>
+      </section>
+      <section id="world" aria-labelledby="favorites-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">CLOSER, ACROSS TIME ZONES</p>
+            <h2 id="favorites-title">Your world at a glance</h2>
+          </div>
+          <span id="favorite-count" class="subtle"></span>
+        </div>
+        <p id="favorites-empty" class="empty" hidden>
+          Keep your favorite places close. Star a city below to add it here.
+        </p>
+        <div id="favorites-grid" class="favorites-grid"></div>
+        <p id="favorite-message" class="field-message" role="status"></p>
+      </section>
+      <section class="explorer" aria-labelledby="explore-title">
+        <div class="section-heading">
+          <div>
+            <h2 id="explore-title">Explore the world</h2>
+            <p class="subtle">Find a city. See their side of the day.</p>
+          </div>
+          <span class="catalog-label">WORLD CLOCK DIRECTORY</span>
+        </div>
+        <form id="search-form" class="filters" role="search">
+          <div class="search-field">
+            <label class="sr-only" for="searchInput">Search city or timezone</label
+            ><span aria-hidden="true">⌕</span
+            ><input
+              type="search"
+              id="searchInput"
+              maxlength="80"
+              placeholder="Search city or timezone…"
+              autocomplete="off"
+            />
+          </div>
+          <div>
+            <label class="sr-only" for="regionSelect">Region</label
+            ><select id="regionSelect">
+              <option value="">All regions</option>
+            </select>
+          </div>
+          <div>
+            <label class="sr-only" for="page-size">Clocks per page</label
+            ><select id="page-size">
+              <option value="12">12 per page</option>
+              <option value="24">24 per page</option>
+              <option value="48">48 per page</option>
+            </select>
+          </div>
+          <button id="clear-search" class="secondary" type="button">Clear</button>
+        </form>
+        <div id="catalog-status" class="catalog-status" role="status">Loading world clocks…</div>
+        <div id="catalog-error" class="notice error" role="alert" hidden>
+          <span>We couldn’t load the clocks. Check your connection and try again.</span
+          ><button id="retry" class="secondary" type="button">Try again</button>
+        </div>
+        <div id="clock-grid" class="clock-grid" aria-busy="true"></div>
+        <div id="no-results" class="empty" hidden>
+          No cities found. Try another spelling or clear your filters.
+        </div>
+        <nav class="pagination" aria-label="World clock pages">
+          <span id="page-summary" class="subtle"></span>
+          <div>
+            <button id="previous-page" class="secondary" type="button" disabled>← Previous</button
+            ><span id="page-number">Page 1 of 1</span
+            ><button id="next-page" class="secondary" type="button" disabled>Next →</button>
+          </div>
+        </nav>
+      </section>
+      <section id="tools" aria-labelledby="tools-title">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">A MOMENT, WELL SPENT</p>
+            <h2 id="tools-title">Set your own pace</h2>
+          </div>
+          <button id="enable-sound" class="secondary" type="button">Enable &amp; test sound</button>
+        </div>
+        <p class="subtle tool-note">
+          Keep this page open and your device awake for alerts. Sound needs to be enabled after
+          opening the page.
+        </p>
+        <p id="sound-status" class="field-message" role="status"></p>
+        <div class="tools-grid">
+          <section class="tool-panel" aria-labelledby="timer-title">
+            <div class="panel-heading">
+              <h3 id="timer-title">Focus timer</h3>
+              <span class="pill muted">ONE THING AT A TIME</span>
+            </div>
+            <p class="subtle">A little space to do your best work.</p>
+            <div id="timer-display" class="timer-display" role="timer" aria-label="Time remaining">
+              00:25:00
+            </div>
+            <p id="timer-status" class="timer-status">Ready when you are</p>
+            <form id="timer-form" novalidate>
+              <fieldset id="timer-inputs">
+                <legend class="sr-only">Timer duration</legend>
+                <div class="duration-fields">
+                  <label
+                    >Hours<input
+                      id="timer-hours"
+                      type="number"
+                      min="0"
+                      max="24"
+                      step="1"
+                      value="0"
+                      required /></label
+                  ><label
+                    >Minutes<input
+                      id="timer-minutes"
+                      type="number"
+                      min="0"
+                      max="59"
+                      step="1"
+                      value="25"
+                      required /></label
+                  ><label
+                    >Seconds<input
+                      id="timer-seconds"
+                      type="number"
+                      min="0"
+                      max="59"
+                      step="1"
+                      value="0"
+                      required
+                  /></label>
+                </div>
+              </fieldset>
+              <p id="timer-error" class="field-message" role="alert"></p>
+              <div class="timer-actions">
+                <button id="timer-start" class="primary" type="submit">Start timer</button
+                ><button id="timer-pause" class="secondary" type="button" disabled>Pause</button
+                ><button id="timer-reset" class="secondary" type="button" disabled>Reset</button>
+              </div>
+            </form>
+          </section>
+          <section class="tool-panel" aria-labelledby="alarm-title">
+            <div class="panel-heading">
+              <h3 id="alarm-title">A gentle reminder</h3>
+              <span id="alarm-count" class="pill muted">0 / 10</span>
+            </div>
+            <p class="subtle">One-time alarms in your device’s local timezone.</p>
+            <form id="alarm-form" novalidate>
+              <div class="alarm-fields">
+                <label for="alarm-time">Time<input id="alarm-time" type="time" required /></label
+                ><label for="alarm-label"
+                  >Label <span class="subtle">(optional)</span
+                  ><input
+                    id="alarm-label"
+                    type="text"
+                    maxlength="40"
+                    placeholder="Time for a break"
+                    autocomplete="off"
+                /></label>
+              </div>
+              <p id="alarm-preview" class="subtle">Choose a time to see when it will ring.</p>
+              <p id="alarm-error" class="field-message" role="alert"></p>
+              <button id="alarm-add" class="primary" type="submit">＋ Add alarm</button>
+            </form>
+            <ul id="alarm-list" class="alarm-list" aria-label="Scheduled alarms"></ul>
+            <p id="alarms-empty" class="alarm-empty">No alarms set. Enjoy the quiet.</p>
+          </section>
+        </div>
+      </section>
+      <footer>
+        <span class="brand small">meridian.</span>
+        <p>Time, thoughtfully.</p>
+        <span>Saved on this browser · No account needed</span>
+      </footer>
+    </main>
+    <dialog id="alert-dialog" aria-labelledby="alert-title">
+      <p class="eyebrow">YOUR MOMENT IS HERE</p>
+      <h2 id="alert-title">Time for a pause.</h2>
+      <ul id="alert-messages"></ul>
+      <button id="dismiss-alert" class="primary" type="button">Dismiss</button>
+    </dialog>
+    <noscript
+      ><p class="notice">Enable JavaScript to use world clocks, timers, and alarms.</p></noscript
+    >
   </body>
 </html>

@@ -1,0 +1,7 @@
+.agents/
+.codex/
+skills-lock.json
+package-lock.json
+node_modules/
+artifacts/
+pyproject.toml

@@ -11,6 +11,17 @@ After completing an authorized implementation task, commit the verified changes 
 
 Do not push, amend existing commits, rewrite history, or disable hooks unless the user explicitly requests it. An instruction to leave changes uncommitted overrides this workflow.
 
+## Mobile design and Apple/Safari compatibility
+
+For frontend changes, preserve Meridian's forest-green palette, serif hero, and calm visual hierarchy. Treat phone layouts as a first-class interface: use readable type, consistent spacing, clear section grouping, and full-width primary actions where narrow layouts need them. Reflow dense content instead of shrinking it to fit.
+
+- Support layouts from 320 CSS pixels through desktop, including iPhone portrait/landscape and iPad widths. Long city names, 12-hour times, alarm labels, and errors must wrap or reflow without clipping or page-level horizontal scrolling.
+- Keep inputs/selects at least 16px and interactive touch targets at least 44 by 44 CSS pixels. Preserve native time/select controls, visible labels and focus, keyboard navigation, pinch zoom, and reduced-motion preferences.
+- Account for Safari safe-area insets when using `viewport-fit=cover`. Keep dialogs scrollable and their dismissal reachable in short viewports; use a viewport-height fallback before dynamic viewport units. Verify browser support or provide a fallback for new CSS/JavaScript APIs, and retain a readable background when visual effects are unavailable.
+- Run browser regressions in Chromium and WebKit using desktop and touch-enabled iPhone contexts for both FastAPI and static exports. Review screenshots at 320, 390, 430, 768, and 844 CSS pixels and affected loading, empty, validation, storage/network failure, and alert states. Check control bounds and content overflow as well as screenshots.
+- Treat current and previous major Safari releases on iOS/iPadOS/macOS as compatibility targets. WebKit automation is evidence for that engine, not a claim of physical Apple-device testing. Before release, record actual Safari/device versions checked for native pickers, keyboard opening/closing, rotation, safe areas, sound activation, and return from background. Report unavailable device checks explicitly.
+- Keep setup documentation and CI browser installation aligned with the required tests. A missing browser is a failed prerequisite, not a reason to skip compatibility tests. Preserve the existing rule that a failed release gate leaves changes uncommitted.
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.

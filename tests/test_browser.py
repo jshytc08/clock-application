@@ -71,18 +71,26 @@ def base_url(request, tmp_path_factory):
 
 
 @pytest.fixture(scope="module")
-def browser():
+def playwright():
     with sync_playwright() as playwright:
-        browser = playwright.chromium.launch()
-        yield browser
-        browser.close()
+        yield playwright
 
 
-@pytest.fixture
-def page(browser):
-    context = browser.new_context(
-        viewport={"width": 1440, "height": 1050}, timezone_id="Asia/Manila"
+@pytest.fixture(scope="module", params=["chromium", "webkit"])
+def browser(playwright, request):
+    browser = getattr(playwright, request.param).launch()
+    yield browser
+    browser.close()
+
+
+@pytest.fixture(params=["desktop", "phone"])
+def page(browser, playwright, request):
+    device = (
+        {"viewport": {"width": 1440, "height": 1050}}
+        if request.param == "desktop"
+        else {**playwright.devices["iPhone 13"], "device_scale_factor": 1}
     )
+    context = browser.new_context(**device, timezone_id="Asia/Manila", reduced_motion="reduce")
     page = context.new_page()
     errors = []
     page.on("pageerror", lambda error: errors.append(str(error)))
@@ -94,6 +102,29 @@ def page(browser):
 def open_app(page, base_url):
     page.goto(base_url)
     expect(page.locator("#clock-grid .clock-card")).to_have_count(12)
+
+
+def capture(page, base_url, state, *, full_page=True):
+    artifacts = ROOT / "artifacts"
+    artifacts.mkdir(exist_ok=True)
+    hosting = "pages" if "/clock-application/" in base_url else "server"
+    engine = page.context.browser.browser_type.name
+    profile = str(page.viewport_size["width"])
+    page.screenshot(
+        path=str(artifacts / f"{engine}-{profile}-{hosting}-{state}.png"),
+        full_page=full_page,
+    )
+
+
+def assert_mobile_controls(page):
+    small_fields = page.locator("input, select").evaluate_all("""elements => elements
+      .filter(el => parseFloat(getComputedStyle(el).fontSize) < 16).map(el => el.id)""")
+    assert not small_fields, f"Mobile fields need readable 16px text: {small_fields}"
+    small_targets = page.locator("button, .topbar a").evaluate_all("""elements => elements
+      .filter(el => el.getClientRects().length && !el.disabled)
+      .filter(el => {const r = el.getBoundingClientRect(); return r.width < 44 || r.height < 44})
+      .map(el => el.id || el.getAttribute('aria-label') || el.textContent)""")
+    assert not small_targets, f"Touch targets must be at least 44px: {small_targets}"
 
 
 def test_catalog_search_pagination_and_no_per_clock_polling(page, base_url):
@@ -112,6 +143,7 @@ def test_catalog_search_pagination_and_no_per_clock_polling(page, base_url):
     expect(page.locator("#clock-grid h3")).to_have_text("New York")
     page.locator("#searchInput").fill("zzzzzzzz")
     expect(page.locator("#no-results")).to_be_visible()
+    capture(page, base_url, "empty-search")
     page.locator("#clear-search").click()
     page.locator("#page-size").select_option("48")
     expect(page.locator("#clock-grid .clock-card")).to_have_count(48)
@@ -148,6 +180,8 @@ def test_timer_validation_pause_reload_resume_and_single_completion(page, base_u
     page.locator("#timer-minutes").fill("0")
     page.locator("#timer-start").click()
     expect(page.locator("#timer-error")).to_contain_text("between 1 second and 24 hours")
+    page.locator("#timer-error").scroll_into_view_if_needed()
+    capture(page, base_url, "timer-error", full_page=False)
     page.locator("#timer-seconds").fill("2")
     page.locator("#timer-start").click()
     expect(page.locator("#timer-hours")).to_be_disabled()
@@ -158,6 +192,7 @@ def test_timer_validation_pause_reload_resume_and_single_completion(page, base_u
     page.clock.fast_forward(2500)
     expect(page.locator("#alert-dialog")).to_be_visible()
     expect(page.locator("#alert-messages")).to_contain_text("focus timer is complete")
+    capture(page, base_url, "timer-alert", full_page=False)
     page.locator("#dismiss-alert").click()
     page.clock.fast_forward(5000)
     expect(page.locator("#alert-dialog")).not_to_be_visible()
@@ -170,6 +205,8 @@ def test_alarms_validation_duplicate_limit_safe_labels_and_due_delivery(page, ba
     page.clock.install()
     page.locator("#alarm-add").click()
     expect(page.locator("#alarm-error")).to_contain_text("valid alarm time")
+    page.locator("#alarm-error").scroll_into_view_if_needed()
+    capture(page, base_url, "alarm-error", full_page=False)
     times = page.evaluate("""() => Array.from({length: 10}, (_, index) => {
       const date = new Date(Date.now() + (index + 2) * 60000);
       return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
@@ -209,6 +246,8 @@ def test_network_failure_retry_and_corrupt_storage(page, base_url):
     expect(page.locator("#storage-notice")).to_be_visible()
     expect(page.locator("#catalog-error")).to_be_visible()
     expect(page.locator("#next-page")).to_be_disabled()
+    page.locator("#catalog-error").scroll_into_view_if_needed()
+    capture(page, base_url, "network-storage-error", full_page=False)
     page.unroute(catalog_route)
     page.locator("#retry").click()
     expect(page.locator("#clock-grid .clock-card")).to_have_count(12)
@@ -224,26 +263,87 @@ def test_blocked_storage_and_failed_sync_remain_usable(page, base_url):
     page.locator("#hour-format").click()
     expect(page.locator("#hour-format")).to_have_text("12-hour")
     expect(page.locator("#storage-notice")).to_contain_text("unavailable")
+    page.locator("#storage-notice").scroll_into_view_if_needed()
+    capture(page, base_url, "storage-unavailable", full_page=False)
 
 
 def test_responsive_layout_labels_keyboard_and_screenshots(page, base_url):
     open_app(page, base_url)
-    artifacts = ROOT / "artifacts"
-    artifacts.mkdir(exist_ok=True)
-    suffix = "-pages" if "/clock-application/" in base_url else ""
-    page.screenshot(path=str(artifacts / f"desktop{suffix}.png"), full_page=True)
+    capture(page, base_url, "initial")
     assert page.locator("input, select").evaluate_all(
         "(elements) => elements.every(el => el.labels.length > 0)"
     )
-    page.keyboard.press("Control+Home")
-    page.locator("body").click(position={"x": 2, "y": 2})
-    page.keyboard.press("Tab")
-    expect(page.get_by_role("link", name="Skip to content")).to_be_focused()
+    initial_width = page.viewport_size["width"]
+    if initial_width > 700:
+        page.locator("body").click(position={"x": 2, "y": 2})
+        page.keyboard.press("Tab")
+        expect(page.get_by_role("link", name="Skip to content")).to_be_focused()
+        page.keyboard.press("Enter")
+        expect(page.locator("#main")).to_be_focused()
     page.locator("#hero-title").click()
-    for width in (390, 320):
-        page.set_viewport_size({"width": width, "height": 844})
+    for width, height in ((320, 844), (390, 844), (430, 932), (844, 390), (768, 1024)):
+        page.set_viewport_size({"width": width, "height": height})
         assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
-        page.screenshot(path=str(artifacts / f"mobile-{width}{suffix}.png"), full_page=True)
+        capture(page, base_url, f"from-{initial_width}-layout-{width}")
+        if width <= 700:
+            assert_mobile_controls(page)
+
+
+def test_narrow_long_content_and_short_viewport_alert(page, base_url):
+    page.set_viewport_size({"width": 320, "height": 640})
+    open_app(page, base_url)
+    page.locator("#hour-format").click()
+    page.locator("#searchInput").fill("Argentina")
+    expect(page.locator("#clock-grid h3").first).to_be_visible()
+    assert page.locator(".clock-card, .local-clock").evaluate_all(
+        "elements => elements.every(el => el.scrollWidth <= el.clientWidth)"
+    )
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    capture(page, base_url, "long-cities-12-hour")
+    page.locator("#alarm-time").fill("23:59")
+    page.locator("#alarm-label").fill("A" * 40)
+    page.locator("#alarm-add").click()
+    expect(page.locator("#alarm-list strong")).to_have_text("A" * 40)
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    page.clock.install()
+    page.locator("#timer-minutes").fill("0")
+    page.locator("#timer-seconds").fill("1")
+    page.locator("#timer-start").click()
+    page.clock.fast_forward(1500)
+    page.set_viewport_size({"width": 390, "height": 320})
+    expect(page.locator("#alert-dialog")).to_be_visible()
+    page.locator("#dismiss-alert").scroll_into_view_if_needed()
+    expect(page.locator("#dismiss-alert")).to_be_in_viewport()
+    capture(page, base_url, "short-viewport-alert", full_page=False)
+    page.locator("#dismiss-alert").click()
+    expect(page.locator("#alert-dialog")).not_to_be_visible()
+
+
+def test_catalog_loading_and_navigation(page, base_url):
+    pending = []
+    catalog_route = (
+        "**/static/data/timezones.json"
+        if "/clock-application/" in base_url
+        else "**/api/timezones?*"
+    )
+    page.route(catalog_route, lambda route: pending.append(route))
+    page.goto(base_url, wait_until="domcontentloaded")
+    expect(page.locator("#clock-grid")).to_have_attribute("aria-busy", "true")
+    expect(page.locator("#catalog-status")).to_contain_text("Loading")
+    page.locator("#catalog-status").scroll_into_view_if_needed()
+    capture(page, base_url, "loading", full_page=False)
+    assert pending
+    for route in pending:
+        route.continue_()
+    page.unroute(catalog_route)
+    expect(page.locator("#clock-grid .clock-card")).to_have_count(12)
+    page.get_by_role("link", name="Meridian home").scroll_into_view_if_needed()
+    navigation = page.get_by_role("link", name="Timer & alarms", exact=True)
+    if page.viewport_size["width"] <= 700:
+        navigation.tap()
+    else:
+        navigation.click()
+    expect(page.locator("#tools-title")).to_be_in_viewport()
 
 
 def test_configured_host_restrictions_reject_untrusted_requests(base_url):
@@ -260,8 +360,19 @@ def test_configured_host_restrictions_reject_untrusted_requests(base_url):
 
 def test_sound_opt_in_and_timer_reset(page, base_url):
     open_app(page, base_url)
-    page.locator("#enable-sound").click()
-    expect(page.locator("#sound-status")).to_contain_text("Sound enabled")
+    sound = page.locator("#enable-sound")
+    if page.viewport_size["width"] <= 700:
+        sound.tap()
+    else:
+        sound.click()
+    if sys.platform == "win32" and page.context.browser.browser_type.name == "webkit":
+        # Windows Playwright WebKit has no Web Audio implementation. Assert the
+        # actual capability and the app's fallback; other platforms must enable it.
+        assert page.evaluate("typeof AudioContext") == "undefined"
+        expect(page.locator("#sound-status")).to_contain_text("Sound is unavailable")
+    else:
+        expect(page.locator("#sound-status")).to_contain_text("Sound enabled")
+    capture(page, base_url, "sound-status", full_page=False)
     page.locator("#timer-start").click()
     page.locator("#timer-reset").click()
     expect(page.locator("#timer-hours")).to_be_enabled()

@@ -32,16 +32,16 @@ Pages runs entirely in the browser: it uses device time and a bundled timezone c
 
 ## Verify before committing
 
-Install development dependencies and Chromium once, with Node.js 22+ available:
+Install development dependencies, Chromium, and WebKit once, with Node.js 22+ available:
 
 ```powershell
 .venv\Scripts\python -m pip install -r requirements-dev.txt
 npm ci
-.venv\Scripts\python -m playwright install chromium
+.venv\Scripts\python -m playwright install chromium webkit
 .venv\Scripts\python scripts/check.py
 ```
 
-The release gate checks dependency consistency, Python lint/formatting, JavaScript syntax/formatting, logic tests, API tests, real Chromium flows, and Git whitespace. Browser tests start an isolated local server and use separate browser storage. Screenshots are saved in ignored `artifacts/`. GitHub Actions runs the same gate on pushes and pull requests. `AGENTS.md` instructs coding agents to commit completed, verified work locally; it is not a background watcher that commits every file save. Pushing remains manual.
+The release gate checks dependency consistency, Python lint/formatting, JavaScript syntax/formatting, logic tests, API tests, desktop and mobile Chromium/WebKit flows, and Git whitespace. Browser tests start an isolated local server and use separate browser storage. Screenshots are saved in ignored `artifacts/`, named by engine, viewport, hosting mode, and state. Windows Playwright WebKit lacks Web Audio, so its sound check verifies the unavailable-sound fallback; other engine/platform combinations must enable audio. GitHub Actions runs the same gate on pushes and pull requests. `AGENTS.md` instructs coding agents to commit completed, verified work locally; it is not a background watcher that commits every file save. Pushing remains manual.
 
 ## Alert behavior and privacy
 
@@ -51,7 +51,7 @@ Timers use stored device-clock deadlines, so delayed callbacks do not accumulate
 
 Favorites, display preferences, timer state, and alarm labels stay in local storage on this browser and origin. Clearing site data removes them. Storage-disabled browsers can use the current tab but cannot persist changes. Same-origin tabs synchronize saved state; simultaneous edits use the most recent write, and multiple open tabs can each show an alert. Use one tab if you want a single sound alert. No cross-device sync or background notification service is provided.
 
-The app requires a current browser with JavaScript, Intl timezone data, Web Audio (for sound), and AbortSignal timeout/any support. Automated browser coverage currently uses Chromium. Verify any other target browsers on staging before launch.
+The app requires a current browser with JavaScript, Intl timezone data, Web Audio (for sound), and AbortSignal timeout/any support. Automated browser coverage runs Chromium and WebKit with desktop and iPhone device contexts against both server and static builds. Layout checks cover 320, 390, 430, 768, and 844 CSS pixels, including landscape and a short alert viewport. WebKit emulation is not physical Safari verification; verify native pickers, keyboard resizing, safe areas, and sound on an actual iPhone/iPad and macOS Safari before launch.
 
 ## Read-only API
 

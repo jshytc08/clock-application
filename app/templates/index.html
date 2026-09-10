@@ -2,7 +2,7 @@
 <html lang="en" data-hosting="server">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#101816" />
     <meta
       name="description"
@@ -14,7 +14,7 @@
     <script type="module" src="./static/js/main.js"></script>
   </head>
   <body>
-    <a class="skip-link" href="#main">Skip to content</a>
+    <a class="skip-link" href="#main" tabindex="0">Skip to content</a>
     <header class="topbar">
       <a class="brand" href="#main" aria-label="Meridian home"
         ><span class="brand-mark" aria-hidden="true">◷</span> meridian<span class="brand-dot"
@@ -26,7 +26,7 @@
       </nav>
       <span class="private-badge">◈ &nbsp; Your time. Your space.</span>
     </header>
-    <main id="main" class="shell">
+    <main id="main" class="shell" tabindex="-1">
       <div id="storage-notice" class="notice" role="status" hidden></div>
       <section class="hero" aria-labelledby="hero-title">
         <div class="hero-copy">
@@ -151,6 +151,7 @@
                     >Hours<input
                       id="timer-hours"
                       type="number"
+                      inputmode="numeric"
                       min="0"
                       max="24"
                       step="1"
@@ -160,6 +161,7 @@
                     >Minutes<input
                       id="timer-minutes"
                       type="number"
+                      inputmode="numeric"
                       min="0"
                       max="59"
                       step="1"
@@ -169,6 +171,7 @@
                     >Seconds<input
                       id="timer-seconds"
                       type="number"
+                      inputmode="numeric"
                       min="0"
                       max="59"
                       step="1"

@@ -23,7 +23,7 @@ jobs:
           cache: npm
       - run: pip install -r requirements-dev.txt
       - run: npm ci
-      - run: python -m playwright install --with-deps chromium
+      - run: python -m playwright install --with-deps chromium webkit
       - run: python scripts/check.py
       - run: python -m pip_audit -r requirements.txt
       - run: npm audit

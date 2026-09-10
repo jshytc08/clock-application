@@ -10,7 +10,7 @@ Windows PowerShell:
 python -m venv .venv
 .venv\Scripts\python -m pip install -r requirements-dev.txt
 npm ci
-.venv\Scripts\python -m playwright install chromium
+.venv\Scripts\python -m playwright install chromium webkit
 .venv\Scripts\python -m uvicorn app.main:app --reload --port 8200
 ```
 
@@ -21,7 +21,7 @@ python3 -m venv .venv
 . .venv/bin/activate
 python -m pip install -r requirements-dev.txt
 npm ci
-python -m playwright install --with-deps chromium
+python -m playwright install --with-deps chromium webkit
 python -m uvicorn app.main:app --reload --port 8200
 ```
 
